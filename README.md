@@ -154,7 +154,9 @@ so101-vr-override-reset --left-port "$SO101_LEFT_PORT" --right-port "$SO101_RIGH
 
 ## License
 
-TBD (upstream LeRobot / Isaac Teleop example code retains NVIDIA & Hugging Face Apache-2.0 headers).
+Apache License 2.0. See [`LICENSE`](LICENSE).
+
+This repository includes code adapted from the LeRobot Isaac Teleop → SO-101 example (copyright NVIDIA Corporation and The HuggingFace Inc. team), also under Apache-2.0. Keep upstream copyright headers in those files. Runtime dependency `isaacteleop` is subject to its own NVIDIA package terms.
 
 ## References
 

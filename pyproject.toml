@@ -7,6 +7,7 @@ name = "so101-vr-teleop"
 version = "0.1.0"
 description = "Bimanual SO-101 real-robot teleoperation and dataset recording via Meta Quest + NVIDIA Isaac Teleop (LeRobot)"
 readme = "README.md"
+license = "Apache-2.0"
 requires-python = ">=3.10"
 authors = [{ name = "kouya0205" }]
 keywords = ["lerobot", "so101", "isaac-teleop", "quest", "teleoperation", "bimanual"]
