@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+dist/
+build/
+.venv/
+venv/
+.env
+.python-version
+
+# Local configs (keep *.example.*)
+configs/cameras.json
+configs/robot.env
+!configs/*.example.*
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+*.swp
+
+# LeRobot / CloudXR local caches (never commit)
+.cache/
+*.mp4
+datasets/
+data/
+
+# uv / pip
+uv.lock
