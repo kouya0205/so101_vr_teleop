@@ -16,8 +16,6 @@
 
 """Teleoperate a bimanual SO-101 via Quest XR controllers (Isaac Teleop)."""
 
-from __future__ import annotations
-
 import json
 import time
 from dataclasses import dataclass

@@ -24,24 +24,50 @@ git clone https://github.com/kouya0205/so101_vr_teleop.git
 cd so101_vr_teleop
 bash scripts/bootstrap.sh
 source .venv/bin/activate
-python -m isaacteleop.cloudxr --accept-eula   # once
+python -m isaacteleop.cloudxr --accept-eula   # once (interactive EULA)
 ```
 
 Firewall (CloudXR / Quest): allow UDP `47998` and TCP `49100,48322` (see [Isaac Teleop Quick Start](https://nvidia.github.io/IsaacTeleop/main/getting_started/quick_start.html)).
 
-## Configure
+### Find arm serial ports
 
 ```bash
-cp configs/robot.example.env configs/robot.env
-cp configs/cameras.example.json configs/cameras.json
-# edit ports / camera indices
-python scripts/find_cameras.py --write configs/cameras.json
-python scripts/check_env.py
-set -a && source configs/robot.env && set +a
-export SO101_CAMERAS_JSON="$PWD/configs/cameras.json"
+ls -l /dev/serial/by-id/
+# or
+ls /dev/ttyACM* /dev/ttyUSB*
+python -m serial.tools.list_ports -v
 ```
 
+Unplug one arm and re-list to map left vs right. Prefer stable `by-id` paths when possible.
+
+## Configure
+
+Always activate the venv first (`opencv` / `so101-vr-*` live there):
+
+```bash
+source .venv/bin/activate
+cp configs/robot.example.env configs/robot.env
+cp configs/cameras.example.json configs/cameras.json
+# edit ports in configs/robot.env
+python scripts/find_cameras.py --write configs/cameras.json
+# edit index_or_path in configs/cameras.json to match mounts
+python scripts/check_env.py
+```
+
+**Every new terminal:**
+
+```bash
+source .venv/bin/activate
+set -a && source configs/robot.env && set +a
+export SO101_CAMERAS_JSON="$PWD/configs/cameras.json"
+echo "L=$SO101_LEFT_PORT R=$SO101_RIGHT_PORT"   # must not be empty
+```
+
+If ports print empty, teleop fails with `Could not connect on port ''`.
+
 ### Camera layout
+
+Camera USB mapping is **only** in [`configs/cameras.json`](configs/cameras.json) (`index_or_path` per key).
 
 | Key | Role |
 |-----|------|
@@ -52,6 +78,19 @@ export SO101_CAMERAS_JSON="$PWD/configs/cameras.json"
 
 ## Teleoperate
 
+### CloudXR: do not start it twice
+
+`python -m isaacteleop.cloudxr --accept-eula` leaves CloudXR running and binds TCP **49100**. Starting teleop without skipping auto-launch then fails with `Port 49100 is already in use`.
+
+**Option A — reuse the already-running CloudXR (recommended if you accepted EULA in another terminal):**
+
+```bash
+export LEROBOT_CLOUDXR_SKIP_AUTOLAUNCH=1
+source ~/.cloudxr/run/cloudxr.env
+```
+
+**Option B — let teleop launch CloudXR:** stop the other process first (`Ctrl-C` in that terminal, or `pkill -f 'isaacteleop.cloudxr'`), then run teleop **without** `LEROBOT_CLOUDXR_SKIP_AUTOLAUNCH`.
+
 ```bash
 so101-vr-teleop \
   --robot.type=bi_so_follower \
@@ -61,7 +100,14 @@ so101-vr-teleop \
   --teleop.type=bi_xr_controller
 ```
 
-In the headset: open https://nvidia.github.io/IsaacTeleop/client , enter this PC’s LAN IP, accept the cert, Connect. **Squeeze grip** to engage each arm independently; **trigger** closes that gripper.
+### Quest connection
+
+1. On the headset open the CloudXR client (versioned URL from the `isaacteleop.cloudxr` banner, or https://nvidia.github.io/IsaacTeleop/client ).
+2. **Server IP** = this PC’s LAN address on the **same Wi‑Fi** as the Quest (`hostname -I`; use `10.x` / `192.168.x`, not Docker `172.17.0.1`).
+3. Accept the self-signed cert at `https://<that-ip>:48322/` , then Connect.
+4. When teleop prints `Starting bimanual teleop…`: **squeeze grip** to engage each arm; **trigger** = gripper. Release grip to freeze that arm.
+
+First connect may run interactive joint calibration per arm and save under `~/.cache/huggingface/lerobot/calibration/`.
 
 ## Record a dataset
 
@@ -85,6 +131,18 @@ so101-vr-record \
 - Dataset contains follower joints + cameras only (no XR poses).
 
 Keyboard (TTY): `n` end episode, `r` re-record, `q` stop.
+
+## Troubleshooting
+
+| Symptom | Likely cause | Fix |
+|---------|----------------|-----|
+| `opencv-python is required` from `find_cameras.py` | System Python, not venv | `source .venv/bin/activate` then re-run |
+| `Could not connect on port ''` | `SO101_*_PORT` unset in this shell | `set -a && source configs/robot.env && set +a` |
+| `Port 49100 is already in use` | Second CloudXR launch | Reuse: `export LEROBOT_CLOUDXR_SKIP_AUTOLAUNCH=1` + `source ~/.cloudxr/run/cloudxr.env`, or kill the other CloudXR |
+| Headset waits forever | Wrong IP / cert / Wi‑Fi | Same LAN; cert on `:48322`; avoid Docker IP |
+| Arms do not move after “Starting bimanual teleop” | Clutch not engaged | Hold **grip** past threshold (~0.5); check controller tracking |
+
+Placo “self collisions in neutral position” warnings on SO-101 URDF are common and usually **not** fatal.
 
 ## Override reset pose
 

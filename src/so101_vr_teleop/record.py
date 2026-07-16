@@ -23,8 +23,6 @@ Pass ``--dataset.repo_id=...`` to override; we intentionally skip
 ``DatasetRecordConfig.stamp_repo_id()`` to avoid double-dating with Hub uploads.
 """
 
-from __future__ import annotations
-
 import logging
 import os
 import time
