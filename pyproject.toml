@@ -36,11 +36,3 @@ packages = ["src/so101_vr_teleop"]
 [tool.hatch.build.targets.wheel.sources]
 "src" = ""
 
-[tool.hatch.build.targets.sdist]
-include = [
-  "src/so101_vr_teleop",
-  "configs",
-  "scripts",
-  "README.md",
-  "pyproject.toml",
-]
