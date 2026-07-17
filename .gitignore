@@ -13,6 +13,7 @@ venv/
 # Local configs (keep *.example.*)
 configs/cameras.json
 configs/robot.env
+configs/record.env
 !configs/*.example.*
 
 # IDE / OS

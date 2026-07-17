@@ -54,16 +54,14 @@ python scripts/find_cameras.py --write configs/cameras.json
 python scripts/check_env.py
 ```
 
-**Every new terminal:**
+**Every new terminal** (preferred — loads robot + record env, cameras path, CloudXR reuse):
 
 ```bash
-source .venv/bin/activate
-set -a && source configs/robot.env && set +a
-export SO101_CAMERAS_JSON="$PWD/configs/cameras.json"
-echo "L=$SO101_LEFT_PORT R=$SO101_RIGHT_PORT"   # must not be empty
+source scripts/env.sh
+# or: ./scripts/run_teleop.sh / ./scripts/run_record.sh (they source env.sh)
 ```
 
-If ports print empty, teleop fails with `Could not connect on port ''`.
+Manual equivalent: `source .venv/bin/activate` then `set -a && source configs/robot.env && set +a`. If ports print empty, teleop fails with `Could not connect on port ''`.
 
 ### Camera layout
 
@@ -91,6 +89,14 @@ source ~/.cloudxr/run/cloudxr.env
 
 **Option B — let teleop launch CloudXR:** stop the other process first (`Ctrl-C` in that terminal, or `pkill -f 'isaacteleop.cloudxr'`), then run teleop **without** `LEROBOT_CLOUDXR_SKIP_AUTOLAUNCH`.
 
+Recommended smoke teleop:
+
+```bash
+./scripts/run_teleop.sh
+```
+
+Manual CLI:
+
 ```bash
 so101-vr-teleop \
   --robot.type=bi_so_follower \
@@ -111,6 +117,31 @@ First connect may run interactive joint calibration per arm and save under `~/.c
 
 ## Record a dataset
 
+End-to-end collection line (recommended):
+
+```bash
+# 0) once per machine / session
+source .venv/bin/activate
+python -m isaacteleop.cloudxr --accept-eula   # leave running, or reuse later
+
+# 1) local configs
+cp configs/robot.example.env configs/robot.env          # ports
+cp configs/cameras.example.json configs/cameras.json    # edit indices
+cp configs/record.example.env configs/record.env        # task / episodes
+# edit SO101_SINGLE_TASK, SO101_NUM_EPISODES, etc.
+
+# 2) smoke teleop (no dataset) until clutch + cameras feel OK
+./scripts/run_teleop.sh
+
+# 3) record
+./scripts/run_record.sh
+```
+
+`scripts/env.sh` loads `robot.env` + `record.env`, sets `SO101_CAMERAS_JSON`, and defaults
+`LEROBOT_CLOUDXR_SKIP_AUTOLAUNCH=1` (source `~/.cloudxr/run/cloudxr.env`).
+
+Manual equivalent:
+
 ```bash
 so101-vr-record \
   --robot.type=bi_so_follower \
@@ -129,8 +160,16 @@ so101-vr-record \
 - Auto `repo_id`: `{HF_USER}/so101_bi_{task}_v{NNN}` (next free index). **No datetime stamp** (Hub upload already carries time metadata).
 - Override with `--dataset.repo_id=user/name_v042` if you want a fixed id.
 - Dataset contains follower joints + cameras only (no XR poses).
+- Local datasets land under `$HF_LEROBOT_HOME` (default `~/.cache/huggingface/lerobot`).
 
 Keyboard (TTY): `n` end episode, `r` re-record, `q` stop.
+
+Collection checklist:
+
+1. CloudXR up, Quest connected (PC LAN IP + cert `:48322`)
+2. `configs/cameras.json` indices verified (`./scripts/run_teleop.sh` or find_cameras)
+3. Practice one arm with clutch before multi-episode record
+4. Keep `SO101_PUSH_TO_HUB=false` until a few episodes look good
 
 ## Troubleshooting
 

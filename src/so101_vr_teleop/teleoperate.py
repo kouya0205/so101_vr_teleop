@@ -43,12 +43,17 @@ def _maybe_load_cameras(robot_cfg: RobotConfig) -> None:
     raw = json.loads(path.read_text())
     cams = {}
     for name, spec in raw.items():
-        cams[name] = OpenCVCameraConfig(
-            index_or_path=spec["index_or_path"],
-            width=spec.get("width", 640),
-            height=spec.get("height", 480),
-            fps=spec.get("fps", 30),
-        )
+        kwargs = {
+            "index_or_path": spec["index_or_path"],
+            "width": spec.get("width", 640),
+            "height": spec.get("height", 480),
+            "fps": spec.get("fps", 30),
+        }
+        if "fourcc" in spec:
+            kwargs["fourcc"] = spec["fourcc"]
+        if "backend" in spec:
+            kwargs["backend"] = spec["backend"]
+        cams[name] = OpenCVCameraConfig(**kwargs)
     robot_cfg.cameras = cams
 
 
